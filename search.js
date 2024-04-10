@@ -1,18 +1,17 @@
 const selectBox = document.getElementById('selectBox');
 const form = document.querySelector('#form');
 const weatherContainer = document.createElement('div');
-
+const cityButtonContainer = document.createElement('div');
 
 weatherContainer.setAttribute('id', 'weather-container');
+cityButtonContainer.classList.add('citycontain');
 
 document.body.appendChild(form);
 document.body.appendChild(weatherContainer);
-
-
+document.body.appendChild(cityButtonContainer);
 
 function handleSubmit(e) {
     e.preventDefault();
-    
     
     let city = document.getElementById('city').value;
     console.log(city);
@@ -27,44 +26,95 @@ function locSearch(cityName) {
     .then(function (data) {
         console.log(data);
         
-        const cityName = data.city.name;
+        const cityOutput = data.city.name;
         
-        // Clear previous weather cards
         weatherContainer.innerHTML = '';
         
-        // Create weather cards for each day
+        // creates cards for each day and assings data
         for (let i = 0; i < data.list.length; i += 8) {
             const forecastData = data.list[i];
             const date = new Date(forecastData.dt * 1000);
             const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
-            
+            const weatherIcon = forecastData.weather[0].icon;
+            const windSpeed = Math.round(forecastData.wind.speed);
+            const humidity = forecastData.main.humidity;
             const temperature = Math.round(forecastData.main.temp);
             const cloudCoverage = forecastData.clouds.all;
             
             const weatherCard = document.createElement('div');
-            weatherCard.classList.add('card')
+            weatherCard.classList.add('card');
             
-            const cityNameElement = document.createElement('h2');
-            const dateElement = document.createElement('p');
-            const temperatureElement = document.createElement('p');
-            const cloudCoverageElement = document.createElement('p');
+            let weatherIconEl = document.createElement('img');
+            weatherIconEl.src = `http://openweathermap.org/img/wn/${weatherIcon}.png`;
+
+            const windSpeedEl = document.createElement('p');
+            const cityNameEl = document.createElement('h2');
+            const dateEl = document.createElement('p');
+            const temperatureEl = document.createElement('p');
+            const cloudCoverageEl = document.createElement('p');
+            const humidityEl = document.createElement('p');
+
+            cityNameEl.textContent = cityName;
+            dateEl.textContent = dayOfWeek;
+            temperatureEl.textContent = `Temperature: ${temperature}°F`;
+            humidityEl.textContent = `Humidty: ${humidity}`;
+            cloudCoverageEl.textContent = `Cloud Coverage: ${cloudCoverage}%`;
+            windSpeedEl.textContent = `Wind speed: ${windSpeed}`;
             
-            cityNameElement.textContent = cityName;
-            dateElement.textContent = dayOfWeek;
-            temperatureElement.textContent = `Temperature: ${temperature}°F`;
-            cloudCoverageElement.textContent = `Cloud Coverage: ${cloudCoverage}%`;
-            
-            weatherCard.appendChild(cityNameElement);
-            weatherCard.appendChild(dateElement);
-            weatherCard.appendChild(temperatureElement);
-            weatherCard.appendChild(cloudCoverageElement);
+            // append data to card
+            weatherCard.appendChild(weatherIconEl);
+            weatherCard.appendChild(cityNameEl);
+            weatherCard.appendChild(dateEl);
+            weatherCard.appendChild(temperatureEl);
+            weatherCard.appendChild(cloudCoverageEl);
+            weatherCard.appendChild(windSpeedEl);
+            weatherCard.appendChild(humidityEl);
+
             weatherContainer.appendChild(weatherCard);
-            localStorage.setItem('id', )
         }
+        // calls create new button
+        createCityButton(cityOutput);
     })
     .catch(function (error) {
         console.error('Error:', error);
     });
 }
 
-form.addEventListener('submit', handleSubmit);
+
+const cityButtons = new Set(JSON.parse(localStorage.getItem('cityButtons')) || []);
+// sets city buttons in local storage to save
+function saveCityButtons() {
+    localStorage.setItem('cityButtons', JSON.stringify(Array.from(cityButtons)));
+}
+// creates city button
+function createCityButton(cityName) {
+    const existingButton = document.querySelector(`.city-button[data-city="${cityName}"]`);
+    //if button exists retun nothing
+    if (existingButton) {
+        return; 
+    }
+
+    var button = document.createElement('button');
+    button.classList.add('city-button');
+    button.textContent = cityName;
+    button.setAttribute('data-city', cityName);
+    button.addEventListener('click', function() {
+        handleButtonClick(cityName);
+    });
+    cityButtonContainer.appendChild(button);
+
+    cityButtons.add(cityName);
+    saveCityButtons();
+}
+
+function handleButtonClick(cityName) {
+    locSearch(cityName);
+}
+
+function init() {
+    cityButtons.forEach(createCityButton);
+    form.addEventListener('submit', handleSubmit);
+}
+
+init();
+
